@@ -71,9 +71,20 @@ print(average)'''
 
 # day 4
 
-exercises = [3, 6, 9, 4, 8]
+'''exercises = [3, 6, 9, 4, 8]
 total = 0
 for exercise in exercises:
     total += exercise
 average = total // len(exercises)
-print(average)
+print(average)'''
+
+# day 5
+
+students = [
+    {'name': 'sai', 'age': 14, 'classification': 'robotics'},
+    {'name': 'aaron', 'age': 15, 'classification': 'tsa'},
+    {'name': 'akhil', 'age': 13, 'classification': 'deca'}
+]
+
+for student in students:
+    print(student['name'], student['classification'])
