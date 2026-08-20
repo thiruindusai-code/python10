@@ -36,8 +36,44 @@ print(message)'''
 
 # day 3
 
-age = int(input('what is your age '))
+'''age = int(input('what is your age '))
 if age >= 18:
     print('eligible for drivers licence')
 else:
-    print('not eligible for drivers licence')
+    print('not eligible for drivers licence')'''
+
+
+'''def check_progress(exersices):
+    if exersices >= 0 and exersices <= 4:
+        return 'keep going'
+    elif exersices >= 5 and exersices <= 9:
+        return 'almost there'
+    elif exersices >= 10:
+        return 'goal reached'
+    else:
+        return 'please enter a positive number'
+
+
+exersices = int(input('how many exercises have you completed '))
+message = check_progress(exersices)
+print(message)'''
+
+# day4
+
+'''total = 0
+num = [3, 6, 9]
+
+for number in num:
+    total += number
+
+average = total // len(num)
+print(average)'''
+
+# day 4
+
+exercises = [3, 6, 9, 4, 8]
+total = 0
+for exercise in exercises:
+    total += exercise
+average = total // len(exercises)
+print(average)
