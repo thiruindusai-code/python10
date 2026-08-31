@@ -80,11 +80,182 @@ print(average)'''
 
 # day 5
 
-students = [
+'''students = [
     {'name': 'sai', 'age': 14, 'classification': 'robotics'},
     {'name': 'aaron', 'age': 15, 'classification': 'tsa'},
     {'name': 'akhil', 'age': 13, 'classification': 'deca'}
 ]
 
 for student in students:
-    print(student['name'], student['classification'])
+    print(student['name'], student['classification'])'''
+
+# day 6
+
+'''patients = [
+    {"name": "Alex", "exercises": 3},
+    {"name": "Sam", "exercises": 7},
+    {"name": "Jordan", "exercises": 12}
+]
+
+
+def check_progress(exercises):
+    if exercises >= 0 and exercises <= 4:
+        return 'keep going'
+    elif exercises >= 5 and exercises <= 9:
+        return 'almost there'
+    elif exercises >= 10:
+        return 'goal reached'
+    else:
+        return 'please enter a positive number'
+
+
+for patient in patients:
+    result = check_progress(patient['exercises'])
+    print(patient['name'], '=', result)'''
+
+# day7
+'''patients = []
+for i in range(3):
+    print('Patient number', i + 1)
+    name = input('enter your name ')
+    exercises = int(input('how many exersices have you completed '))
+
+    patient = {'name': name,
+               'exercises': exercises
+               }
+
+    patients.append(patient)
+print(patients)'''
+
+# day 8
+
+
+'''def check_progress(exercises):
+    if exercises >= 0 and exercises <= 4:
+        return 'keep going'
+    elif exercises >= 5 and exercises <= 9:
+        return 'almost there'
+    elif exercises >= 10:
+        return 'goal reached'
+    else:
+        return 'please enter a positive number'
+
+
+patients = []
+for i in range(3):
+    print('Patient number', i + 1)
+    name = input('enter your name ')
+    exercises = int(input('how many exersices have you completed '))
+
+    patient = {'name': name,
+               'exercises': exercises
+               }
+
+    patients.append(patient)
+print(patients)
+
+for patient in patients:
+    result = check_progress(patient['exercises'])
+    print(patient['name'], result)'''
+
+
+# day 9
+'''def check_progress(exercises):
+    if exercises >= 0 and exercises <= 4:
+        return 'keep going'
+    elif exercises >= 5 and exercises <= 9:
+        return 'almost there'
+    elif exercises >= 10:
+        return 'goal reached'
+    else:
+        return 'please enter a positive number'
+
+
+patients = []
+for i in range(3):
+    print('Patient number', i + 1)
+    name = input('enter your name ').strip().title()
+    exercises = int(input('how many exersices have you completed '))
+
+    patient = {'name': name,
+               'exercises': exercises
+               }
+
+    patients.append(patient)
+print(patients)
+
+for patient in patients:
+    result = check_progress(patient['exercises'])
+    print(patient['name'], result)'''
+
+
+# day 10
+
+'''answer = "yes"
+while answer == "yes":
+    print("running")
+    answer = input("do you want to continue ")
+    
+patients = []
+answer = 'yes'
+while answer == 'yes':
+    name = input('what is your name :')
+    exercises = int(input('how many exercises have you completed :'))
+
+    patient = {'name': name,
+               'exercises': exercises}
+
+    patients.append(patient)
+
+    answer = input('Add another patient :').lower().strip()
+
+print(patients)'''
+
+
+# day 11
+'''while True:
+    try:
+        exercises = int(input('how many exercises did you do '))
+        print(exercises)
+        break
+    except ValueError:
+        print('please enter a number')
+
+print('you have did', exercises, ('exersices'))'''
+
+
+# day 12
+'''def get_exercises():
+    while True:
+        try:
+            exercises = int(input('how many exercises did you do '))
+            return exercises
+        except ValueError:
+            print('please enter a number')
+
+
+name = input('Enter your name: ')
+exercise = get_exercises()
+print(name, 'you did', exercise, 'exercises')'''
+
+
+# day 13
+'''def get_exercises():
+    while True:
+        try:
+            exercises = int(input('how many exercises did you do '))
+            return exercises
+        except ValueError:
+            print('please enter a number')
+
+
+name = input('Enter your name: ')
+exercises = get_exercises()
+print(name, 'you did', exercise, 'exercises')
+
+patient = {
+    'name': name,
+    'exercises': exercises
+}
+print(patient)
+'''
