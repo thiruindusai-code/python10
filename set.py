@@ -1,3 +1,3 @@
-student = {'sai', 'thiru', 'indu'}
+'''student = {'sai', 'thiru', 'indu'}
 print(student)
-student.pop[1]
+student.pop[1]'''
