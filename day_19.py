@@ -26,9 +26,8 @@ with open('patient.txt', 'r') as file:
         }
 
         patients.append(patient)
-
-print(patients)
-
+if __name__ == '__main__':
+    print(patients)
 
 for patient in patients:
     result = check_progress(patient['exercises'])
