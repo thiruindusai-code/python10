@@ -1,3 +1,4 @@
+import day_25
 # day 1
 '''patient_tracking = int(input('what is the number of exersize you completed? ')
                        )
