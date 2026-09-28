@@ -82,9 +82,10 @@ while True:
         elif angle < 70:
             status = "Arm Bent"
 
-            if stage == "straight":
-                stage = "bent"
+            if stage == "straight" and form == "Good form":
                 rep_count += 1
+            stage = "bent"
+
         else:
             status = "Moving"
 
