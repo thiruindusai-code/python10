@@ -45,12 +45,15 @@ if len(patient_sessions) >= 2:
 
     previous_session = patient_sessions[-2]
     latest_session = patient_sessions[-1]
+    first_session = patient_sessions[0]
 
     previous_reps = int(previous_session["completed_reps"])
     latest_reps = int(latest_session["completed_reps"])
+    first_reps = int(first_session["completed_reps"])
 
     previous_time = int(previous_session["time_seconds"])
     latest_time = int(latest_session["time_seconds"])
+    first_time = int(first_session["time_seconds"])
 
     print()
     print("----- Session Comparison -----")
@@ -68,3 +71,20 @@ if len(patient_sessions) >= 2:
         print("Reps decreased")
     else:
         print("Reps stayed the same")
+
+    print()
+    print("---- First VS Latest")
+
+    if latest_reps > first_reps:
+        print("Reps increased since the first session")
+    elif first_reps > latest_reps:
+        print("Reps decreases since the first session")
+    else:
+        print("reps stayed the same")
+
+    if latest_time > first_time:
+        print("Session time increased since first session")
+    elif latest_time < first_time:
+        print("Session time decreased since first session")
+    else:
+        print("Session time stayed the same")
