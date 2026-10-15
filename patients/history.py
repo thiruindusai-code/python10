@@ -57,27 +57,9 @@ if len(patient_sessions) >= 2:
 
     rep_difference = latest_reps - first_reps
     time_difference = latest_time - first_time
-    print()
-    print("----- Change Amount -----")
-
-    print(f"Rep change: {rep_difference}")
-    print(f"Time change: {time_difference} seconds")
 
     print()
-    print("----- Session Comparison -----")
-    if rep_difference > 0:
-        print(f"Reps increased by {rep_difference}")
-    elif rep_difference < 0:
-        print(f"Reps decreased by {abs(rep_difference)}")
-    else:
-        print("Reps did not change")
-
-    if time_difference > 0:
-        print(f"Session time increased by {time_difference} seconds")
-    elif time_difference < 0:
-        print(f"Session time decreased by {abs(time_difference)} seconds")
-    else:
-        print("Session time did not change")
+    print("----- Previous vs Latest -----")
 
     if latest_time < previous_time:
         print("Session time decreased")
@@ -94,18 +76,18 @@ if len(patient_sessions) >= 2:
         print("Reps stayed the same")
 
     print()
-    print("---- First VS Latest")
+    print("----- First vs Latest -----")
 
-    if latest_reps > first_reps:
-        print("Reps increased since the first session")
-    elif first_reps > latest_reps:
-        print("Reps decreased since the first session")
+    if rep_difference > 0:
+        print(f"Reps increased by {rep_difference}")
+    elif rep_difference < 0:
+        print(f"Reps decreased by {abs(rep_difference)}")
     else:
-        print("Reps stayed the same")
+        print("Reps did not change")
 
-    if latest_time > first_time:
-        print("Session time increased since first session")
-    elif latest_time < first_time:
-        print("Session time decreased since first session")
+    if time_difference > 0:
+        print(f"Session time increased by {time_difference} seconds")
+    elif time_difference < 0:
+        print(f"Session time decreased by {abs(time_difference)} seconds")
     else:
-        print("Session time stayed the same")
+        print("Session time did not change")
