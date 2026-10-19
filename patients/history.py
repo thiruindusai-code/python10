@@ -5,6 +5,8 @@ patient_name = input("Enter patient name: ").strip().title()
 session_count = 0
 total_reps = 0
 total_time = 0
+completed_sessions = 0
+incomplete_sessions = 0
 
 patient_sessions = []
 
@@ -24,22 +26,43 @@ with open("rehab_history.csv", "r") as file:
             print(f"Reps: {session['completed_reps']}")
             print(f"Target: {session['target_reps']}")
             print(f"Time: {session['time_seconds']} seconds")
+            if "status" in session and session["status"]:
+                session_status = session["status"]
+            else:
+                if int(session["completed_reps"]) >= int(session["target_reps"]):
+                    session_status = "Completed"
+                else:
+                    session_status = "Incomplete"
+            if session_status == "Completed":
+                completed_sessions += 1
+            else:
+                incomplete_sessions += 1
+
+            print(f"Status: {session_status}")
 
 
 if session_count > 0:
     average_reps = total_reps / session_count
     average_time = total_time / session_count
+    completion_rate = (
+        completed_sessions / session_count
+    ) * 100
 else:
     average_reps = 0
     average_time = 0
+    completion_rate = 0
 
 
 print()
 print("----- Progress Summary -----")
 print(f"Total sessions: {session_count}")
+print(f"Completed sessions: {completed_sessions}")
+print(f"Completion rate: {completion_rate:.1f}%")
+print(f"Incomplete sessions: {incomplete_sessions}")
 print(f"Total reps: {total_reps}")
 print(f"Average reps: {average_reps}")
 print(f"Average time: {average_time} seconds")
+
 
 if len(patient_sessions) >= 2:
 
