@@ -1,6 +1,20 @@
 import csv
 
 patient_name = input("Enter patient name: ").strip().title()
+print()
+print("Choose exercise to view:")
+print("1. Bicep Curl")
+print("2. Shoulder Raise")
+
+exercise_choice = input("Enter 1 or 2: ")
+
+if exercise_choice == "1":
+    selected_exercise = "Bicep Curl"
+elif exercise_choice == "2":
+
+    selected_exercise = "Shoulder Raise"
+else:
+    selected_exercise = "Bicep Curl"
 
 session_count = 0
 total_reps = 0
@@ -14,7 +28,10 @@ with open("rehab_history.csv", "r") as file:
     reader = csv.DictReader(file)
 
     for session in reader:
-        if session["patient"] == patient_name:
+        if (
+            session["patient"] == patient_name
+            and session["exercise"] == selected_exercise
+        ):
             patient_sessions.append(session)
 
             session_count += 1
@@ -24,6 +41,7 @@ with open("rehab_history.csv", "r") as file:
             print()
             print(f"Date: {session['date']}")
             print(f"Reps: {session['completed_reps']}")
+            print(f"Exercise: {session['exercise']}")
             print(f"Target: {session['target_reps']}")
             print(f"Time: {session['time_seconds']} seconds")
             if "status" in session and session["status"]:
@@ -55,6 +73,7 @@ else:
 
 print()
 print("----- Progress Summary -----")
+print(f"Exercise: {selected_exercise}")
 print(f"Total sessions: {session_count}")
 print(f"Completed sessions: {completed_sessions}")
 print(f"Completion rate: {completion_rate:.1f}%")

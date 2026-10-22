@@ -1,10 +1,7 @@
-patient,date,target_reps,completed_reps,time_seconds
-Test,2026-10-08,2,2,6
-Thiru,2026-10-10,3,3,14
-Thiru,2026-10-10,3,3,9
-Thiru,2026-10-10,5,5,16
-Thiru,2026-10-11,2,2,13
-Thiru,2026-10-11,5,5,15
-Sai,2026-10-14,12,12,41
-Sai,2026-10-17,10,10,48,Completed
-Test,2026-10-18,3,2,9,Incomplete
+patient,exercise,date,target_reps,completed_reps,time_seconds,status
+Sai,Bicep Curl,2026-10-19,10,10,62,Completed
+Test,Shoulder Raise,2026-10-20,2,1,66,Incomplete
+Test,Shoulder Raise,2026-10-20,2,0,59,Incomplete
+Test,Shoulder Raise,2026-10-20,2,0,26,Incomplete
+Test,Shoulder Raise,2026-10-21,2,2,8,Completed
+Sai,Shoulder Raise,2026-10-21,10,10,26,Completed
