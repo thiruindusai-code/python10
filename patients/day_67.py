@@ -6,15 +6,31 @@ import csv
 from datetime import date
 
 
-# -----------------------------
+# =============================
+# SETTINGS / THRESHOLDS
+# =============================
+
+BICEP_STRAIGHT = 150
+BICEP_BENT = 90
+
+SHOULDER_DOWN = 20
+SHOULDER_UP = 55
+
+SHOULDER_DIFF_MAX = 15
+TORSO_SHIFT_MAX = 0.020
+ELBOW_STRAIGHT_MIN = 130
+
+VISIBILITY_MIN = 0.5
+
+
+# =============================
 # MEDIAPIPE SETUP
-# -----------------------------
+# =============================
 
 BaseOptions = mp.tasks.BaseOptions
 PoseLandmarker = mp.tasks.vision.PoseLandmarker
 PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
 RunningMode = mp.tasks.vision.RunningMode
-
 
 options = PoseLandmarkerOptions(
     base_options=BaseOptions(
@@ -26,21 +42,21 @@ options = PoseLandmarkerOptions(
 pose = PoseLandmarker.create_from_options(options)
 
 
-# -----------------------------
-# 2D ANGLE FUNCTION
-# -----------------------------
+# =============================
+# ANGLE FUNCTIONS
+# =============================
 
-def calculate_angle(shoulder, elbow, wrist):
+def calculate_angle(point1, point2, point3):
 
     angle = math.degrees(
         math.atan2(
-            wrist.y - elbow.y,
-            wrist.x - elbow.x
+            point3.y - point2.y,
+            point3.x - point2.x
         )
         -
         math.atan2(
-            shoulder.y - elbow.y,
-            shoulder.x - elbow.x
+            point1.y - point2.y,
+            point1.x - point2.x
         )
     )
 
@@ -52,22 +68,18 @@ def calculate_angle(shoulder, elbow, wrist):
     return angle
 
 
-# -----------------------------
-# 3D ANGLE FUNCTION
-# -----------------------------
-
-def calculate_3d_angle(shoulder, elbow, wrist):
+def calculate_3d_angle(point1, point2, point3):
 
     vector1 = (
-        shoulder.x - elbow.x,
-        shoulder.y - elbow.y,
-        shoulder.z - elbow.z
+        point1.x - point2.x,
+        point1.y - point2.y,
+        point1.z - point2.z
     )
 
     vector2 = (
-        wrist.x - elbow.x,
-        wrist.y - elbow.y,
-        wrist.z - elbow.z
+        point3.x - point2.x,
+        point3.y - point2.y,
+        point3.z - point2.z
     )
 
     dot_product = (
@@ -105,24 +117,9 @@ def calculate_3d_angle(shoulder, elbow, wrist):
     )
 
 
-# -----------------------------
-# DISTANCE FUNCTION
-# -----------------------------
-
-def calculate_distance(point1, point2):
-
-    distance = math.sqrt(
-        (point1.x - point2.x) ** 2
-        + (point1.y - point2.y) ** 2
-        + (point1.z - point2.z) ** 2
-    )
-
-    return distance
-
-
-# -----------------------------
+# =============================
 # SAVE SESSION
-# -----------------------------
+# =============================
 
 def save_session(
     patient_name,
@@ -135,7 +132,6 @@ def save_session(
 
     if rep_count >= target_reps:
         session_status = "Completed"
-
     else:
         session_status = "Incomplete"
 
@@ -173,12 +169,12 @@ def save_session(
             "status": session_status
         })
 
-    print("Saving session....")
+    print("Saving session...")
 
 
-# -----------------------------
+# =============================
 # PATIENT INFORMATION
-# -----------------------------
+# =============================
 
 patient_name = input(
     "Enter your name: "
@@ -192,7 +188,6 @@ print("2. Shoulder Raise")
 exercise_choice = input(
     "Enter 1 or 2: "
 )
-
 
 if exercise_choice == "1":
     exercise_name = "Bicep Curl"
@@ -210,9 +205,10 @@ target_reps = int(
     )
 )
 
-# -----------------------------
-# CAMERA SETUP
-# -----------------------------
+
+# =============================
+# CAMERA
+# =============================
 
 camera = cv2.VideoCapture(0)
 
@@ -228,45 +224,32 @@ cv2.resizeWindow(
 )
 
 start_time = time.monotonic()
-
-# -----------------------------
-# SESSION VARIABLES
-# -----------------------------
+session_start_time = time.monotonic()
 
 session_date = date.today()
 
-session_start_time = time.monotonic()
-
 rep_count = 0
-
 stage = None
-
 bent_frames = 0
-
 session_saved = False
-
 final_time = None
 
 
-# -----------------------------
-# MAIN CAMERA LOOP
-# -----------------------------
+# =============================
+# CAMERA LOOP
+# =============================
 
 while True:
 
     success, frame = camera.read()
 
+    if not success:
+        break
+
     elapsed_time = int(
         time.monotonic()
         - session_start_time
     )
-
-    if not success:
-        break
-
-    # -------------------------
-    # CONVERT FRAME
-    # -------------------------
 
     rgb_frame = cv2.cvtColor(
         frame,
@@ -278,10 +261,6 @@ while True:
         data=rgb_frame
     )
 
-    # -------------------------
-    # TIMESTAMP
-    # -------------------------
-
     timestamp_ms = int(
         (
             time.monotonic()
@@ -289,101 +268,62 @@ while True:
         ) * 1000
     )
 
-    # -------------------------
-    # POSE DETECTION
-    # -------------------------
-
     results = pose.detect_for_video(
         mp_image,
         timestamp_ms
     )
 
+    # =========================
+    # POSE FOUND
+    # =========================
+
     if results.pose_landmarks:
 
-        landmarks = (
-            results.pose_landmarks[0]
-        )
+        landmarks = results.pose_landmarks[0]
+        world = results.pose_world_landmarks[0]
 
-        world_landmarks = (
-            results.pose_world_landmarks[0]
-        )
-
-        # ---------------------
-        # RIGHT LANDMARKS
-        # ---------------------
-
+        # Normal landmarks
         right_shoulder = landmarks[12]
         right_elbow = landmarks[14]
         right_wrist = landmarks[16]
         right_hip = landmarks[24]
-
-        # ---------------------
-        # LEFT LANDMARKS
-        # ---------------------
 
         left_shoulder = landmarks[11]
         left_elbow = landmarks[13]
         left_wrist = landmarks[15]
         left_hip = landmarks[23]
 
-        # ---------------------
-        # RIGHT WORLD LANDMARKS
-        # ---------------------
+        # World landmarks
+        world_right_shoulder = world[12]
+        world_right_elbow = world[14]
+        world_right_wrist = world[16]
 
-        world_right_shoulder = (
-            world_landmarks[12]
-        )
+        world_left_shoulder = world[11]
+        world_left_elbow = world[13]
+        world_left_wrist = world[15]
 
-        world_right_elbow = (
-            world_landmarks[14]
-        )
-
-        world_right_wrist = (
-            world_landmarks[16]
-        )
-
-        world_right_hip = (
-            world_landmarks[24]
-        )
-
-        # ---------------------
-        # LEFT WORLD LANDMARKS
-        # ---------------------
-
-        world_left_shoulder = (
-            world_landmarks[11]
-        )
-
-        world_left_elbow = (
-            world_landmarks[13]
-        )
-
-        world_left_wrist = (
-            world_landmarks[15]
-        )
-
-        # ---------------------
-        # ARM VISIBILITY
-        # ---------------------
+        # =====================
+        # VISIBILITY
+        # =====================
 
         arm_visible = (
-            right_shoulder.visibility > 0.7
-            and right_elbow.visibility > 0.7
-            and right_wrist.visibility > 0.7
+            right_shoulder.visibility > VISIBILITY_MIN
+            and right_elbow.visibility > VISIBILITY_MIN
+            and right_wrist.visibility > VISIBILITY_MIN
         )
 
         both_arms_visible = (
-            right_shoulder.visibility > 0.7
-            and right_elbow.visibility > 0.7
-            and right_wrist.visibility > 0.7
-            and left_shoulder.visibility > 0.7
-            and left_elbow.visibility > 0.7
-            and left_wrist.visibility > 0.7
+            right_shoulder.visibility > VISIBILITY_MIN
+            and right_elbow.visibility > VISIBILITY_MIN
+            and right_wrist.visibility > VISIBILITY_MIN
+            and left_shoulder.visibility > VISIBILITY_MIN
+            and left_elbow.visibility > VISIBILITY_MIN
+            and left_wrist.visibility > VISIBILITY_MIN
         )
 
-        # ---------------------
-        # BICEP CURL FORM CHECK
-        # ---------------------
+        # =====================
+        # BICEP FORM
+        # =====================
 
         elbow_distance = abs(
             right_elbow.x
@@ -392,23 +332,12 @@ while True:
 
         if elbow_distance < 0.12:
             form = "Good form"
-
         else:
             form = "Keep elbow close"
 
-        # ---------------------
-        # RIGHT ELBOW 2D ANGLE
-        # ---------------------
-
-        angle = calculate_angle(
-            right_shoulder,
-            right_elbow,
-            right_wrist
-        )
-
-        # ---------------------
-        # RIGHT ELBOW 3D ANGLE
-        # ---------------------
+        # =====================
+        # ANGLES
+        # =====================
 
         angle_3d = calculate_3d_angle(
             world_right_shoulder,
@@ -416,54 +345,36 @@ while True:
             world_right_wrist
         )
 
-        # ---------------------
-        # LEFT ELBOW 3D ANGLE
-        # ---------------------
-
-        left_elbow_angle_3d = (
-            calculate_3d_angle(
-                world_left_shoulder,
-                world_left_elbow,
-                world_left_wrist
-            )
+        left_elbow_angle_3d = calculate_3d_angle(
+            world_left_shoulder,
+            world_left_elbow,
+            world_left_wrist
         )
 
-        # ---------------------
-        # RIGHT SHOULDER ANGLE
-        # ---------------------
-
-        shoulder_angle = (
-            calculate_angle(
-                right_hip,
-                right_shoulder,
-                right_elbow
-            )
+        shoulder_angle = calculate_angle(
+            right_hip,
+            right_shoulder,
+            right_elbow
         )
 
-        # ---------------------
-        # LEFT SHOULDER ANGLE
-        # ---------------------
-
-        left_shoulder_angle = (
-            calculate_angle(
-                left_hip,
-                left_shoulder,
-                left_elbow
-            )
+        left_shoulder_angle = calculate_angle(
+            left_hip,
+            left_shoulder,
+            left_elbow
         )
 
-        # ---------------------
+        # =====================
         # SHOULDER SYMMETRY
-        # ---------------------
+        # =====================
 
         shoulder_difference = abs(
             shoulder_angle
             - left_shoulder_angle
         )
 
-        # ---------------------
-        # TORSO LEAN CHECK
-        # ---------------------
+        # =====================
+        # TORSO LEAN
+        # =====================
 
         shoulder_center_x = (
             right_shoulder.x
@@ -480,34 +391,29 @@ while True:
             - hip_center_x
         )
 
-        # ---------------------
-        # DEBUG PRINTS
-        # ---------------------
+        # =====================
+        # DEBUG
+        # =====================
 
         print(
-            "Right elbow:",
+            "Shoulder:",
+            int(shoulder_angle),
+            "Left shoulder:",
+            int(left_shoulder_angle),
+            "Difference:",
+            int(shoulder_difference),
+            "R elbow:",
             int(angle_3d),
-            "Left elbow:",
-            int(left_elbow_angle_3d)
-        )
-
-        print(
-            "Shoulder difference:",
-            int(shoulder_difference)
-        )
-
-        print(
-            "Torso shift:",
-            round(torso_shift, 3)
-        )
-
-        print(
-            "Shoulder angle:",
-            int(shoulder_angle)
+            "L elbow:",
+            int(left_elbow_angle_3d),
+            "Torso:",
+            round(torso_shift, 3),
+            "Stage:",
+            stage
         )
 
         # =====================
-        # EXERCISE LOGIC
+        # VISIBILITY CHECK
         # =====================
 
         if (
@@ -530,7 +436,6 @@ while True:
             feedback = "Move both arms into view"
 
             stage = None
-            bent_frames = 0
 
         # =====================
         # BICEP CURL
@@ -538,17 +443,15 @@ while True:
 
         elif exercise_name == "Bicep Curl":
 
-            if angle_3d > 150:
+            if angle_3d > BICEP_STRAIGHT:
 
                 status = "Arm Straight"
-
                 feedback = "Bend your arm"
 
                 stage = "straight"
-
                 bent_frames = 0
 
-            elif angle_3d < 90:
+            elif angle_3d < BICEP_BENT:
 
                 status = "Arm Bent"
 
@@ -562,36 +465,23 @@ while True:
                 ):
 
                     rep_count += 1
-
                     stage = "bent"
 
-                feedback = (
-                    "Straighten your arm"
-                )
+                feedback = "Straighten your arm"
 
             else:
 
                 status = "Moving"
-
                 bent_frames = 0
 
                 if stage == "straight":
-
-                    feedback = (
-                        "Keep bending your arm"
-                    )
+                    feedback = "Keep bending your arm"
 
                 elif stage == "bent":
-
-                    feedback = (
-                        "Keep straightening your arm"
-                    )
+                    feedback = "Keep straightening your arm"
 
                 else:
-
-                    feedback = (
-                        "Straighten your arm to start"
-                    )
+                    feedback = "Straighten your arm to start"
 
         # =====================
         # SHOULDER RAISE
@@ -599,104 +489,269 @@ while True:
 
         elif exercise_name == "Shoulder Raise":
 
-            # ARM DOWN
-
-            if shoulder_angle < 25:
+            # Your real down position is about 9 degrees.
+            if shoulder_angle < SHOULDER_DOWN:
 
                 status = "Arm Down"
-
-                feedback = "Raise your arm"
+                feedback = "Raise your arms"
 
                 stage = "down"
 
-            # ARM RAISED
-
-            elif shoulder_angle > 65:
+            # Your real raised position is about 65 degrees.
+            elif shoulder_angle > SHOULDER_UP:
 
                 status = "Arm Raised"
 
-                feedback = "Lower your arm"
-
-                # -----------------
-                # VALID REP
-                # -----------------
-
                 if (
                     stage == "down"
-                    and shoulder_difference <= 12
-                    and torso_shift <= 0.015
-                    and angle_3d >= 145
-                    and left_elbow_angle_3d >= 145
+                    and shoulder_difference <= SHOULDER_DIFF_MAX
+                    and torso_shift <= TORSO_SHIFT_MAX
+                    and angle_3d >= ELBOW_STRAIGHT_MIN
+                    and left_elbow_angle_3d >= ELBOW_STRAIGHT_MIN
                     and rep_count < target_reps
                 ):
 
                     rep_count += 1
 
-                # -----------------
-                # UNEVEN ARMS
-                # -----------------
+                    feedback = "Good rep! Lower your arms"
 
-                elif shoulder_difference > 12:
+                elif shoulder_difference > SHOULDER_DIFF_MAX:
 
-                    feedback = (
-                        "Raise both arms evenly"
-                    )
+                    feedback = "Raise both arms evenly"
 
-                # -----------------
-                # BODY LEAN
-                # -----------------
+                elif torso_shift > TORSO_SHIFT_MAX:
 
-                elif torso_shift > 0.015:
-
-                    feedback = (
-                        "Keep your body straight"
-                    )
-
-                # -----------------
-                # ELBOWS TOO BENT
-                # -----------------
+                    feedback = "Keep your body straight"
 
                 elif (
-                    angle_3d < 145
-                    or left_elbow_angle_3d < 145
+                    angle_3d < ELBOW_STRAIGHT_MIN
+                    or left_elbow_angle_3d < ELBOW_STRAIGHT_MIN
                 ):
 
-                    feedback = (
-                        "Keep your elbows straighter"
-                    )
+                    feedback = "Keep your elbows straighter"
+
+                else:
+
+                    feedback = "Lower your arms"
 
                 stage = "up"
-
-            # ---------------------
-            # ARM BETWEEN DOWN/UP
-            # ---------------------
 
             else:
 
                 status = "Moving"
 
                 if stage == "down":
-
-                    feedback = (
-                        "Keep raising your arm"
-                    )
+                    feedback = "Keep raising your arms"
 
                 elif stage == "up":
-
-                    feedback = (
-                        "Keep lowering your arm"
-                    )
+                    feedback = "Keep lowering your arms"
 
                 else:
-
-                    feedback = (
-                        "Lower your arm to start"
-                    )
+                    feedback = "Lower your arms to start"
 
         # =====================
-        # GOAL REACHED
+        # GOAL
         # =====================
 
         if rep_count >= target_reps:
 
-            feedback = "Goal reached"
+            feedback = "Goal reached!"
+
+            if final_time is None:
+                final_time = elapsed_time
+
+            if not session_saved:
+
+                save_session(
+                    patient_name,
+                    exercise_name,
+                    session_date,
+                    target_reps,
+                    rep_count,
+                    final_time
+                )
+
+                session_saved = True
+
+        # =====================
+        # SCREEN COORDINATES
+        # =====================
+
+        height, width, _ = frame.shape
+
+        right_elbow_x = int(
+            right_elbow.x * width
+        )
+
+        right_elbow_y = int(
+            right_elbow.y * height
+        )
+
+        left_elbow_x = int(
+            left_elbow.x * width
+        )
+
+        left_elbow_y = int(
+            left_elbow.y * height
+        )
+
+        # =====================
+        # DISPLAY VALUES
+        # =====================
+
+        if exercise_name == "Bicep Curl":
+
+            display_angle = angle_3d
+            display_form = form
+
+        else:
+
+            display_angle = shoulder_angle
+
+            if shoulder_difference > SHOULDER_DIFF_MAX:
+                display_form = "Arms uneven"
+
+            elif torso_shift > TORSO_SHIFT_MAX:
+                display_form = "Keep body straight"
+
+            elif (
+                angle_3d < ELBOW_STRAIGHT_MIN
+                or left_elbow_angle_3d < ELBOW_STRAIGHT_MIN
+            ):
+                display_form = "Straighten elbows"
+
+            else:
+                display_form = "Good form"
+
+        # =====================
+        # TEXT
+        # =====================
+
+        cv2.putText(
+            frame,
+            status,
+            (30, 50),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            f"Reps: {rep_count}/{target_reps}",
+            (30, 100),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            feedback,
+            (30, 150),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            display_form,
+            (30, 200),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            f"Patient: {patient_name}",
+            (30, 250),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            f"Exercise: {exercise_name}",
+            (30, 300),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2
+        )
+
+        cv2.putText(
+            frame,
+            f"{int(display_angle)} degrees",
+            (
+                right_elbow_x,
+                right_elbow_y - 20
+            ),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 255, 255),
+            2
+        )
+
+        # Elbow dots
+        cv2.circle(
+            frame,
+            (right_elbow_x, right_elbow_y),
+            12,
+            (0, 0, 255),
+            -1
+        )
+
+        cv2.circle(
+            frame,
+            (left_elbow_x, left_elbow_y),
+            12,
+            (0, 255, 0),
+            -1
+        )
+
+    # =========================
+    # SHOW CAMERA
+    # =========================
+
+    cv2.imshow(
+        "Pose detection",
+        frame
+    )
+
+    # =========================
+    # QUIT
+    # =========================
+
+    if cv2.waitKey(1) == ord("q"):
+
+        if not session_saved:
+
+            save_session(
+                patient_name,
+                exercise_name,
+                session_date,
+                target_reps,
+                rep_count,
+                elapsed_time
+            )
+
+            session_saved = True
+
+        break
+
+
+# =============================
+# CLEANUP
+# =============================
+
+camera.release()
+pose.close()
+cv2.destroyAllWindows()
