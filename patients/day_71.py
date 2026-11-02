@@ -1,4 +1,5 @@
 import math
+import os
 import cv2
 import mediapipe as mp
 import time
@@ -34,7 +35,10 @@ RunningMode = mp.tasks.vision.RunningMode
 
 options = PoseLandmarkerOptions(
     base_options=BaseOptions(
-        model_asset_path="pose_landmarker_lite.task"
+        model_asset_path=os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "pose_landmarker_lite.task",
+        )
     ),
     running_mode=RunningMode.VIDEO
 )
