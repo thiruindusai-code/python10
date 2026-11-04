@@ -254,12 +254,12 @@ while True:
         break
 
     if exercise_start_time is None:
-        elapsed_time = 0
+        elapsed_time = 0.0
     else:
-        elapsed_time = int(
-        time.monotonic()
-        - exercise_start_time
-    )
+        elapsed_time = (
+            time.monotonic()
+            - exercise_start_time
+        )
 
     rgb_frame = cv2.cvtColor(
         frame,
@@ -780,7 +780,7 @@ while True:
 
         cv2.putText(
             frame,
-            f"Time: {display_time} sec",
+            f"Time: {display_time:.1f} sec",
             (30, 430),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.8,
