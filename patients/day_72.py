@@ -18,9 +18,9 @@ SHOULDER_DOWN = 20
 SHOULDER_UP = 55
 SHOULDER_MAX_ALLOWED = 100
 
-SHOULDER_DIFF_MAX = 15
-TORSO_SHIFT_MAX = 0.020
-ELBOW_STRAIGHT_MIN = 130
+SHOULDER_DIFF_MAX = 25
+TORSO_SHIFT_MAX = 0.10
+ELBOW_STRAIGHT_MIN = 120
 
 VISIBILITY_MIN = 0.5
 
@@ -313,6 +313,9 @@ while True:
         world_left_elbow = world[13]
         world_left_wrist = world[15]
 
+        world_right_hip = world[24]
+        world_left_hip = world[23]
+
         # =====================
         # VISIBILITY
         # =====================
@@ -362,16 +365,31 @@ while True:
             world_left_wrist
         )
 
-        shoulder_angle = calculate_angle(
+        # 2D angles are useful for debugging, but can be inaccurate when
+        # the arms move toward/away from the camera.
+        right_shoulder_angle_2d = calculate_angle(
             right_hip,
             right_shoulder,
             right_elbow
         )
 
-        left_shoulder_angle = calculate_angle(
+        left_shoulder_angle_2d = calculate_angle(
             left_hip,
             left_shoulder,
             left_elbow
+        )
+
+        # Use 3D world landmarks for the actual shoulder-raise logic.
+        shoulder_angle = calculate_3d_angle(
+            world_right_hip,
+            world_right_shoulder,
+            world_right_elbow
+        )
+
+        left_shoulder_angle = calculate_3d_angle(
+            world_left_hip,
+            world_left_shoulder,
+            world_left_elbow
         )
 
         # =====================
@@ -407,20 +425,17 @@ while True:
         # =====================
 
         print(
-            "Shoulder:",
-            int(shoulder_angle),
-            "Left shoulder:",
-            int(left_shoulder_angle),
-            "Difference:",
-            int(shoulder_difference),
-            "R elbow:",
-            int(angle_3d),
-            "L elbow:",
-            int(left_elbow_angle_3d),
-            "Torso:",
-            round(torso_shift, 3),
-            "Stage:",
-            stage
+            "R shoulder 3D:", int(shoulder_angle),
+            "L shoulder 3D:", int(left_shoulder_angle),
+            "R shoulder 2D:", int(right_shoulder_angle_2d),
+            "L shoulder 2D:", int(left_shoulder_angle_2d),
+            "Difference:", int(shoulder_difference),
+            "R elbow:", int(angle_3d),
+            "L elbow:", int(left_elbow_angle_3d),
+            "Torso:", round(torso_shift, 3),
+            "Stage:", stage,
+            "Raised frames:", raised_frames,
+            "Invalid:", shoulder_rep_invalid
         )
 
         # =====================
@@ -448,6 +463,7 @@ while True:
 
             stage = None
             raised_frames = 0
+            shoulder_rep_invalid = True
 
         # =====================
         # BICEP CURL
@@ -503,93 +519,112 @@ while True:
 
         elif exercise_name == "Shoulder Raise":
 
-            # ARM DOWN
-            if shoulder_angle < SHOULDER_DOWN:
+            # TOO HIGH: either arm exceeded the configured safe prototype limit.
+            # Do this check first so one low arm cannot hide the other arm being too high.
+            if max(shoulder_angle, left_shoulder_angle) > SHOULDER_MAX_ALLOWED:
+
+                status = "Too High"
+                feedback = "Lower your arms - rep will not count"
+                shoulder_rep_invalid = True
+                raised_frames = 0
+
+            # ARM DOWN: both arms must return down before a rep is completed.
+            elif (
+                shoulder_angle < SHOULDER_DOWN
+                and left_shoulder_angle < SHOULDER_DOWN
+            ):
 
                 status = "Arm Down"
-                feedback = "Raise your arms"
+
+                if (
+                    stage == "up"
+                    and not shoulder_rep_invalid
+                    and rep_count < target_reps
+                ):
+                    rep_count += 1
+                    feedback = "Good rep! Raise your arms"
+                elif shoulder_rep_invalid:
+                    feedback = "Rep rejected. Raise again"
+                else:
+                    feedback = "Raise your arms"
 
                 stage = "down"
                 raised_frames = 0
                 shoulder_rep_invalid = False
 
-            # TOO HIGH
-            elif shoulder_angle > SHOULDER_MAX_ALLOWED:
-
-                status = "Too High"
-                feedback = "Lower your arms"
-
-                shoulder_rep_invalid = True
-                raised_frames = 0
-
-            # ARM RAISED
-            elif shoulder_angle > SHOULDER_UP:
+            # ARM RAISED: both arms must reach the valid raised zone.
+            elif (
+                shoulder_angle > SHOULDER_UP
+                and left_shoulder_angle > SHOULDER_UP
+            ):
 
                 status = "Arm Raised"
 
                 if (
                     stage == "down"
+                    and not shoulder_rep_invalid
                     and shoulder_difference <= SHOULDER_DIFF_MAX
                     and torso_shift <= TORSO_SHIFT_MAX
                     and angle_3d >= ELBOW_STRAIGHT_MIN
                     and left_elbow_angle_3d >= ELBOW_STRAIGHT_MIN
                     and rep_count < target_reps
-                    and not shoulder_rep_invalid
                 ):
 
                     raised_frames += 1
-
                     feedback = "Hold your arms up"
 
                     if raised_frames >= 2:
-
                         stage = "up"
-
                         raised_frames = 0
 
-                        feedback = "Good rep! Lower your arms"
+                        # Start the exercise timer when the first valid raised
+                        # position is recognized. The rep itself is only counted
+                        # after the arms return fully down.
+                        if rep_count == 0 and exercise_start_time is None:
+                            exercise_start_time = time.monotonic()
+
+                        feedback = "Good height! Lower your arms"
 
                 elif shoulder_difference > SHOULDER_DIFF_MAX:
-
                     raised_frames = 0
-
                     feedback = "Raise both arms evenly"
 
                 elif torso_shift > TORSO_SHIFT_MAX:
-
                     raised_frames = 0
-
                     feedback = "Keep your body straight"
 
                 elif (
                     angle_3d < ELBOW_STRAIGHT_MIN
                     or left_elbow_angle_3d < ELBOW_STRAIGHT_MIN
                 ):
-
                     raised_frames = 0
-
                     feedback = "Keep your elbows straighter"
 
-                else:
-
+                elif stage == "up":
                     raised_frames = 0
-
                     feedback = "Lower your arms"
 
-            # ARM MOVING
+                else:
+                    raised_frames = 0
+                    feedback = "Hold steady and keep good form"
+
+            # ARM MOVING / UNEVEN
             else:
 
                 status = "Moving"
                 raised_frames = 0
 
-                if stage == "down":
-                    feedback = "Keep raising your arms"
-
+                if shoulder_rep_invalid:
+                    feedback = "Lower both arms to restart"
+                elif stage == "down":
+                    if shoulder_difference > SHOULDER_DIFF_MAX:
+                        feedback = "Raise both arms evenly"
+                    else:
+                        feedback = "Keep raising your arms"
                 elif stage == "up":
                     feedback = "Keep lowering your arms"
-
                 else:
-                    feedback = "Lower your arms to start"
+                    feedback = "Lower both arms to start"
 
         # =====================
         # GOAL
@@ -665,9 +700,12 @@ while True:
 
         else:
 
-            display_angle = shoulder_angle
+            display_angle = (shoulder_angle + left_shoulder_angle) / 2
 
-            if shoulder_difference > SHOULDER_DIFF_MAX:
+            if max(shoulder_angle, left_shoulder_angle) > SHOULDER_MAX_ALLOWED:
+                display_form = "Arms too high"
+
+            elif shoulder_difference > SHOULDER_DIFF_MAX:
                 display_form = "Arms uneven"
 
             elif torso_shift > TORSO_SHIFT_MAX:
