@@ -10,19 +10,15 @@ from datetime import date
 # =============================
 # SETTINGS / THRESHOLDS
 # =============================
-
 BICEP_STRAIGHT = 150
 BICEP_BENT = 90
 
-SHOULDER_DOWN = 20
-SHOULDER_UP = 55
-SHOULDER_MAX_ALLOWED = 100
-
-SHOULDER_DIFF_MAX = 25
-TORSO_SHIFT_MAX = 0.10
-ELBOW_STRAIGHT_MIN = 120
-
-VISIBILITY_MIN = 0.5
+# Camera/tracking tolerances — NOT medical limits
+SHOULDER_DOWN = 30
+SHOULDER_DIFF_MAX = 40
+TORSO_SHIFT_MAX = 0.15
+ELBOW_STRAIGHT_MIN = 105
+VISIBILITY_MIN = 0.4
 
 
 # =============================
@@ -210,6 +206,23 @@ target_reps = int(
     )
 )
 
+# =============================
+# PATIENT SHOULDER SETTINGS
+# =============================
+
+if exercise_name == "Shoulder Raise":
+
+    SHOULDER_UP = float(
+        input(
+            "Enter patient's target shoulder angle: "
+        )
+    )
+
+    SHOULDER_MAX_ALLOWED = float(
+        input(
+            "Enter patient's maximum allowed shoulder angle: "
+        )
+    )
 
 # =============================
 # CAMERA
@@ -513,7 +526,7 @@ while True:
                 else:
                     feedback = "Straighten your arm to start"
 
-                # =====================
+        # =====================
         # SHOULDER RAISE
         # =====================
 
